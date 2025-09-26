@@ -27,19 +27,19 @@ router.route("/register").post(registerUser)
 router.route("/login").post(loginUser)
 
 // *OTP routes
-router.route("/otp/send").post(verifyJWT, sendOtpToUser)
-router.route("/otp/verify").post(verifyOtpForUser)
+router.route("/send-otp").get(verifyJWT, sendOtpToUser)
+router.route("/verify-otp").post(verifyOtpForUser)
 
 // *Forgot password flow
-router.route("/password/reset").post(sendResetPasswordLinkToUser)
-router.route("/password/reset/:token").post(resetPassword)
+router.route("/password/forgot-password").post(sendResetPasswordLinkToUser)
+router.route("/password/forgot-password/:token").post(resetPassword)
 
 // *Authenticated user routes
-router.route("/password/update").post(verifyJWT, changeCurrentPassword)
+router.route("/password/update-password").put(verifyJWT, changeCurrentPassword)
 router.route("/dashboard").get(verifyJWT, getLoggedInUserInfo)
-router.route("/profile/update").post(verifyJWT, updateUserProfile)
-router.route("/profile/avatar/update").post(verifyJWT, upload.single("avatar"), updateUserAvatar)
-router.route("/profile/delete").delete(verifyJWT, deleteUser)
+router.route("/update-profile").put(verifyJWT, updateUserProfile)
+router.route("/update-avatar").put(verifyJWT, upload.single("avatar"), updateUserAvatar)
+router.route("/delete-profile").delete(verifyJWT, deleteUser)
 router.route("/logout").get(verifyJWT, logoutUser)
 
 

@@ -1,152 +1,367 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // if using react-router
+// import React, { useEffect, useState } from "react";
+// import { useTheme } from "../../context/ThemeContext";
+// import { useNavigate } from "react-router-dom";
+// import { useDispatch, useSelector } from "react-redux";
+// import { login } from "../../redux/slice/user/user.slice";
+// import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 
-const LoginPage = () => {
-  const navigate = useNavigate?.() ?? (() => {}); // fallback if not using router
-  const [form, setForm] = useState({ email: "", password: "", remember: false });
+// const Login = () => {
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate?.() ?? (() => {});
+
+//   const { loading, error, isAuthenticated } = useSelector((state) => state.user);
+//   const { theme } = useTheme();
+
+//   const [formData, setFormData] = useState({
+//     email: "",
+//     password: "",
+//   });
+//   const { email, password } = formData;
+
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [err, setErr] = useState("");
+
+//   useEffect(() => {
+//     // Sync Redux error -> local error message for display
+//     if (error) setErr(typeof error === "string" ? error : error?.message || "");
+//   }, [error]);
+
+//   useEffect(() => {
+//     // Redirect on successful login
+//     if (isAuthenticated) {
+//       navigate("/dashboard"); // change target as needed
+//     }
+//   }, [isAuthenticated, navigate]);
+
+//   const onChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData((s) => ({ ...s, [name]: value }));
+//   };
+
+//   const validate = () => {
+//     if (!email || !/\S+@\S+\.\S+/.test(email)) {
+//       setErr("Please enter a valid email.");
+//       return false;
+//     }
+//     if (!password || password.length < 8) {
+//       setErr("Password should be at least 8 characters.");
+//       return false;
+//     }
+//     setErr(""); // clear local validation errors
+//     return true;
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     if (!validate()) return;
+
+//     try {
+//       dispatch(login({ email, password }));
+//       // Do not setErr here — let slice's error populate via useEffect
+//     } catch (dispatchError) {
+//       // unlikely with Redux dispatch, but safe fallback
+//       console.error("dispatch error:", dispatchError);
+//       setErr(dispatchError?.message || "Something went wrong while logging in.");
+//     }
+//   };
+
+//   return (
+//     <div
+//       className={`flex items-center justify-center min-h-screen px-4
+//         ${theme === "dark" ? "bg-black text-green-400" : "bg-white text-green-600"}`}
+//     >
+//       <div
+//         className={`w-full max-w-md rounded-2xl shadow-lg p-8
+//           ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"}`}
+//       >
+//         <h2 className="text-2xl font-bold text-center mb-6">Welcome Back</h2>
+
+//         {err && (
+//           <div className="mb-4 text-sm text-red-500 bg-red-100 p-2 rounded">
+//             {err}
+//           </div>
+//         )}
+
+//         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+//           {/* Email */}
+//           <div className="relative">
+//             <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+//             <input
+//               type="email"
+//               name="email"
+//               value={email}
+//               onChange={onChange}
+//               placeholder="Email"
+//               className={`w-full pl-10 pr-3 py-2 rounded-lg border
+//                 focus:outline-none focus:ring-2
+//                 ${theme === "dark"
+//                   ? "bg-gray-800 border-gray-700 focus:ring-green-500"
+//                   : "bg-white border-gray-300 focus:ring-green-600"}`}
+//               autoComplete="email"
+//             />
+//           </div>
+
+//           {/* Password */}
+//           <div className="relative">
+//             <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+//             <input
+//               type={showPassword ? "text" : "password"}
+//               name="password"
+//               value={password}
+//               onChange={onChange}
+//               placeholder="Password"
+//               className={`w-full pl-10 pr-10 py-2 rounded-lg border
+//                 focus:outline-none focus:ring-2
+//                 ${theme === "dark"
+//                   ? "bg-gray-800 border-gray-700 focus:ring-green-500"
+//                   : "bg-white border-gray-300 focus:ring-green-600"}`}
+//               autoComplete="current-password"
+//             />
+//             <button
+//               type="button"
+//               onClick={() => setShowPassword((prev) => !prev)}
+//               className="absolute right-3 top-2.5 text-gray-400"
+//               aria-label={showPassword ? "Hide password" : "Show password"}
+//             >
+//               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+//             </button>
+//           </div>
+
+//           <div className="w-[385px]">
+//             <div className="flex justify-end">
+//               <span onClick={() => navigate("/forgot-password")} className="text-blue-700 font-bold cursor-pointer">Forgot password ?</span>
+//             </div>
+//         </div>
+//           {/* Submit */}
+//           <button
+//             type="submit"
+//             disabled={loading}
+//             className={`w-full py-2 rounded-lg flex items-center justify-center font-medium
+//               transition
+//               ${theme === "dark"
+//                 ? "bg-green-600 text-white hover:bg-green-700"
+//                 : "bg-green-500 text-white hover:bg-green-600"}`}
+//           >
+//             {loading ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : null}
+//             {loading ? "Signing in..." : "Sign In"}
+//           </button>
+//         </form>
+
+//         <p className="mt-4 text-center text-sm">
+//           Don't have an account?{" "}
+//           <span
+//             onClick={() => navigate("/signup")}
+//             className="cursor-pointer font-semibold hover:underline"
+//           >
+//             Create one
+//           </span>
+//         </p>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Login;
+
+import React, { useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { getUser, login } from "../../redux/slice/user/user.slice";
+import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import BackgroundAnimation from "../../components/BackgroundAnimation/BackgroundAnimation";
+import ThemeToogleButton from "../../components/Buttons/ThemeToogleButton";
+
+const Login = ({ user, loading, error, isAuthenticated } ) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate?.() ?? (() => { });
+  
+  const { theme, setTheme } = useTheme();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const { email, password } = formData;
+
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
+
+  useEffect(() => {
+    if (error) setErr(typeof error === "string" ? error : error?.message || "");
+  }, [error]);
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
   const onChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
+    const { name, value } = e.target;
+    setFormData((s) => ({ ...s, [name]: value }));
   };
 
   const validate = () => {
-    if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) {
-      setErr("Please enter a valid email address.");
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setErr("Please enter a valid email.");
       return false;
     }
-    if (!form.password || form.password.length < 6) {
-      setErr("Password must be at least 6 characters long.");
+    if (!password || password.length < 8) {
+      setErr("Password should be at least 8 characters.");
       return false;
     }
     setErr("");
     return true;
   };
 
-  const submit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    setLoading(true);
-    setErr("");
-    try {
-      // Example fetch call - adapt to your backend (axios also fine)
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // if backend sets cookies
-        body: JSON.stringify({ email: form.email, password: form.password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
 
-      // success: backend should set cookie or return token
-      // if you return token: store safely (httpOnly cookie preferred)
-      // example: navigate to dashboard
-      navigate("/dashboard");
-    } catch (error) {
-      setErr(error.message);
-    } finally {
-      setLoading(false);
+    try {
+      dispatch(login({ email, password }));
+    } catch (dispatchError) {
+      console.error("dispatch error:", dispatchError);
+      setErr(
+        dispatchError?.message || "Something went wrong while logging in."
+      );
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="mt-2 text-3xl font-extrabold">
-            Welcome Back to <span className="text-green-500">ExcelAnalytics</span>
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            Sign in to continue to your analytics dashboard.
-          </p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Background Animation */}
+      <BackgroundAnimation theme={theme} />
 
-        <form className="mt-8 space-y-6" onSubmit={submit} noValidate>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <label htmlFor="email" className="sr-only">Email address</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={onChange}
-              required
-              className={`appearance-none rounded-t-md relative block w-full px-4 py-3 border placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400`}
-              placeholder="Email address"
-            />
+      {/* Login Form */}
+<ThemeToogleButton theme={theme} setTheme={setTheme} />
 
-            <label htmlFor="password" className="sr-only">Password</label>
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <div
+          className={`w-full max-w-md rounded-2xl shadow-2xl p-8 backdrop-blur-sm border
+            ${
+              theme === "dark"
+                ? "bg-gray-900/80 border-gray-700 text-green-400"
+                : "bg-white/80 border-gray-200 text-green-600"
+            }`}
+        >
+          <h2 className="text-2xl font-bold text-center mb-6">Welcome Back</h2>
+
+          {err && (
+            <div
+              className={`mb-4 text-sm p-3 rounded-lg border
+              ${
+                theme === "dark"
+                  ? "text-red-400 bg-red-900/20 border-red-800"
+                  : "text-red-600 bg-red-50 border-red-200"
+              }`}
+            >
+              {err}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            {/* Email */}
             <div className="relative">
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                value={form.password}
+                type="email"
+                name="email"
+                value={email}
                 onChange={onChange}
-                required
-                className={`appearance-none rounded-b-md relative block w-full px-4 py-3 border  placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400`}
+                placeholder="Email"
+                className={`w-full pl-10 pr-3 py-3 rounded-lg border 
+                  focus:outline-none focus:ring-2 transition-all
+                  ${
+                    theme === "dark"
+                      ? "bg-gray-800/50 border-gray-700 focus:ring-green-500 focus:border-green-500"
+                      : "bg-white/50 border-gray-300 focus:ring-green-600 focus:border-green-600"
+                  }`}
+                autoComplete="email"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={password}
+                onChange={onChange}
                 placeholder="Password"
+                className={`w-full pl-10 pr-10 py-3 rounded-lg border 
+                  focus:outline-none focus:ring-2 transition-all
+                  ${
+                    theme === "dark"
+                      ? "bg-gray-800/50 border-gray-700 focus:ring-green-500 focus:border-green-500"
+                      : "bg-white/50 border-gray-300 focus:ring-green-600 focus:border-green-600"
+                  }`}
+                autoComplete="current-password"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((s) => !s)}
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-300 transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium"
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center text-sm">
-              <input
-                name="remember"
-                type="checkbox"
-                checked={form.remember}
-                onChange={onChange}
-                className="mr-2"
-              />
-              Remember me
-            </label>
-
-            <div className="text-sm">
-              <a href="/forgot" className="font-medium text-green-600 hover:underline">
+            <div className="flex justify-end">
+              <span
+                onClick={() => navigate("/forgot-password")}
+                className={`text-sm cursor-pointer transition-colors
+                  ${
+                    theme === "dark"
+                      ? "text-blue-400 hover:text-blue-300"
+                      : "text-blue-600 hover:text-blue-500"
+                  }`}
+              >
                 Forgot password?
-              </a>
+              </span>
             </div>
-          </div>
 
-          {err && <div className="text-red-500 text-sm">{err}</div>}
-
-          <div>
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+              className={`w-full py-3 rounded-lg flex items-center justify-center font-medium 
+                transition-all duration-200 disabled:opacity-50
+                ${
+                  theme === "dark"
+                    ? "bg-green-600 hover:bg-green-700 text-white shadow-lg"
+                    : "bg-green-500 hover:bg-green-600 text-white shadow-md"
+                }`}
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? (
+                <Loader2 className="animate-spin h-5 w-5 mr-2" />
+              ) : null}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
-          </div>
+          </form>
 
-          <div className="text-center">
-            <p className="text-sm">
-              Don't have an account?{" "}
-              <a href="/signup" className="font-medium text-green-600 hover:underline">
-                Create one
-              </a>
-            </p>
-          </div>
-        </form>
+          <p className="mt-6 text-center text-sm">
+            Don't have an account?{" "}
+            <span
+              onClick={() => navigate("/signup")}
+              className={`cursor-pointer font-semibold transition-colors
+                ${
+                  theme === "dark"
+                    ? "text-blue-400 hover:text-blue-300"
+                    : "text-blue-600 hover:text-blue-500"
+                }`}
+            >
+              Create one
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
-export default LoginPage;
+export default Login;

@@ -14,15 +14,15 @@ const router = express.Router();
 router.use(verifyJWT);
 
 // ✅ User logs
-router.route("/my").get(getMyActivityLogs);
+router.route("/my-activity-logs").get(getMyActivityLogs);
 
 // ✅ Admin logs
 router
-    .route("/all")
+    .route("/all-activity-logs")
     .get(customRoles("admin"), getAllActivityLogs);
 
 router
     .route("/clear/:id")
-    .delete(customRoles("admin"), clearUserLogs);
+    .delete( clearUserLogs);
 
 export default router;

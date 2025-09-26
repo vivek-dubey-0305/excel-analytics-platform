@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import { sendEmail } from "../utils/mail.utils.js";
 import { cookieToken } from "../utils/cookie.utils.js";
 import { cloudinaryAvatarRefer } from "../utils/constants.utils.js";
+import { logActivity } from "../utils/logActivity.js";
 
 // *================================================================================
 function generateEmailLinkTemplate(Token) {
@@ -23,7 +24,7 @@ function generateEmailLinkTemplate(Token) {
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f7f7;">
 <div>
 <h3>
-<a href="http://localhost:3000/password/reset/${Token}">Click here to reset password</a>
+<a href="http://localhost:5173/password/reset/${Token}">Click here to reset password</a>
 </h3>
 </div>
 </body>
@@ -115,15 +116,18 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
     console.log("SomeOne hitted here")
     const { fullName, email, phone, password } = req.body;
-    console.log("fullName : ", fullName)
+    console.log("fullName : ", fullName, email, password, phone)
 
     const requiredFields = [fullName, email, phone.toString(), password]
 
     const checkFields = { email, phone }
 
-    if (requiredFields.some((field) => field.trim() === "")) {
+    if (requiredFields.some((field) => !field || field.trim() === "")) {
         console.log("All Fields are required")
         return next(new ErrorHandler("All fields are required", 400))
+    }
+        if (password.length < 8) {
+        return next(new ErrorHandler("Password must be at least 8 characters long", 400));
     }
 
     const existingUser = await User.findOne({
@@ -151,6 +155,8 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
 
         await cookieToken(user, res)
+
+
 
 
 
@@ -209,7 +215,9 @@ const loginUser = asyncHandler(async (req, res, next) => {
 // *Logout Route
 const logoutUser = asyncHandler(async (req, res, next) => {
     try {
+        console.log("Logout route hitted")
         const userId = req.user._id
+        console.log(userId)
 
         try {
             const user = await User.findByIdAndUpdate(
@@ -223,6 +231,13 @@ const logoutUser = asyncHandler(async (req, res, next) => {
                     new: true
                 }
             )
+            console.log("Suceess logout")
+            await logActivity(
+                req.user._id,
+                "logout",
+                `${user?.fullName} logged-out from excel-analytics-platform: `,
+                req
+            );
         } catch (error) {
             console.error("Unable to logout USer:\n", error)
         }
@@ -231,6 +246,7 @@ const logoutUser = asyncHandler(async (req, res, next) => {
             httpOnly: true,
             secure: true
         }
+
 
         return res
             .status(200)
@@ -399,8 +415,8 @@ const sendResetPasswordLinkToUser = asyncHandler(async (req, res, next) => {
 // *reset Pasword vai link
 const resetPassword = asyncHandler(async (req, res, next) => {
     // const {token} = req.query;
-    const { password } = req.body
-    const token = req.params.token
+    const { password, confirmPassword } = req.body
+    const token = req?.params?.token
     console.log("token", token)
 
     const encryptedToken = crypto
@@ -424,24 +440,47 @@ const resetPassword = asyncHandler(async (req, res, next) => {
 
     console.log("first")
 
+    if (!password || !confirmPassword) {
+        console.error("Enter both fields")
+
+        return next(new ErrorHandler("Enter both fields", 400))
+    }
+    if (password !== confirmPassword) {
+        console.error("Password and confirm password do not match");
+
+
+        return next(new ErrorHandler("Password and confirm password do not match", 400))
+    }
+
+
     if (!user.forgotPasswordToken || user.forgotPasswordToken !== encryptedToken) {
-        // console.error("Invalid OTP")
+        console.error("Invalid OTP")
         return next(new ErrorHandler("INVALID Link token", 400))
     }
 
     if (user.forgotPasswordTokenExpiry < Date.now()) {
-        // console.error("OTP Expired")
+        console.error("OTP Expired")
         return next(new ErrorHandler("Link Expired", 400))
     }
 
+
+
     user.password = password
 
-
+    console.log("Password  saved to user.pasword")
 
     user.forgotPasswordToken = undefined;
     user.forgotPasswordTokenExpiry = undefined;
+    console.log("Tokens are set to undeined")
 
     await user.save({ validateBeforeSave: true });
+    console.log("Done")
+    await logActivity(
+        user?._id,
+        "reset-password",
+        `${user?.fullName} changed(reset) password `,
+        req
+    );
 
     return res.status(200).
         json({
@@ -456,6 +495,13 @@ const changeCurrentPassword = asyncHandler(async (req, res, next) => {
 
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return next(new ErrorHandler("All fields are required", 400));
+    }
+
+    if (newPassword.length < 8) {
+        return next(new ErrorHandler("Password must be at least 8 characters long", 400));
+    }
 
 
     const user = await User.findById(req.user?._id);
@@ -474,6 +520,12 @@ const changeCurrentPassword = asyncHandler(async (req, res, next) => {
 
     user.password = newPassword;
     await user.save({ validateBeforeSave: false });
+    await logActivity(
+        req.user._id,
+        "change-password",
+        `${user?.fullName} changed password`,
+        req
+    );
 
     return res.status(200).json({
         success: true,
@@ -561,12 +613,19 @@ const updateUserProfile = asyncHandler(async (req, res, next) => {
     if (!updatedUser) {
         return next(new ErrorHandler("User not found", 404));
     }
+    await logActivity(
+        req.user._id,
+        "update-profile",
+        ` ${updatedUser?.fullName} updated profile`,
+        req
+    );
 
     return res.status(200).json({
         success: true,
         message: "Profile updated successfully",
         user: updatedUser
     });
+
 
 
 })
@@ -578,7 +637,8 @@ const updateUserAvatar = asyncHandler(async (req, res, next) => {
     const avatarLocalPath = req.file?.path
 
     if (!avatarLocalPath) {
-        return next(new ErrorHandler("Avatar File is Missing", 401))
+        console.log("AVATAR")
+        return next(new ErrorHandler("Avatar File is Missing", 404))
     }
 
     const user = await User.findById(req?.user?._id);
@@ -625,6 +685,12 @@ const updateUserAvatar = asyncHandler(async (req, res, next) => {
         console.log("NEW URL: ", updatedUser.avatar);
         console.log("Updated User Avatar URL:", updatedUser.avatar.secure_url);
 
+        await logActivity(
+            req.user._id,
+            "avatar",
+            `${updatedUser?.fullName} updated avatar `,
+            req
+        );
         return res
             .status(200)
             .json({
@@ -645,6 +711,7 @@ const getLoggedInUserInfo = asyncHandler(async (req, res, next) => {
     console.log("Over here")
     const user = await User.findById(req.user._id).select("-password -refreshToken")
 
+    console.log("USers thre")
     res.status(200).json({
         success: true,
         user
@@ -665,6 +732,13 @@ const deleteUser = asyncHandler(async (req, res, next) => {
 
         // Delete the user
         await User.findByIdAndDelete(userId);
+
+        await logActivity(
+            req.user._id,
+            "delete-user",
+            `${user?.fullName} delete himself `,
+            req
+        );
         res.status(200).json({ success: true, message: "User deleted successfully" });
     } catch (error) {
         console.error("Error deleting user:", error);

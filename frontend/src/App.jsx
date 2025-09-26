@@ -1,23 +1,107 @@
-import React from "react";
+import React, { Suspense, lazy, useEffect } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+
 import { useTheme } from "./context/ThemeContext";
+import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 
-import { Route, Routes } from "react-router-dom";
-import Home from "./pages/PublicPages/Home";
-import Layout from "./components/Layout/Layout";
-import LoginPage from "./pages/AuthPages/Login";
-import SignupPage from "./pages/AuthPages/Register";
+// ⏳ Lazy loaded imports
+const Home = lazy(() => import("./pages/PublicPages/Home"));
+const Layout = lazy(() => import("./components/Layout/Layout"));
+const Register = lazy(() => import("./pages/AuthPages/Register"));
+const Login = lazy(() => import("./pages/AuthPages/Login"));
+const ForgotPassword = lazy(() => import("./pages/AuthPages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/AuthPages/ResetPassword"));
+const Verification = lazy(() => import("./pages/AuthPages/Verification"));
+const Dashboard = lazy(() => import("./pages/AuthPages/Dashboard"));
+const About = lazy(() => import("./pages/PublicPages/About"));
+const Contact = lazy(() => import("./pages/PublicPages/Contact"));
+const AuthPageLayout = lazy(() => import("./components/Layout/authPageLayout"));
 
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import { useDispatch, useSelector } from "react-redux";
+import { getUser } from "./redux/slice/user/user.slice";
+import Loader from "./components/Loader/Loader";
 const App = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        await dispatch(getUser());
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+
+    fetchUser();
+  }, [dispatch]);
+  const { user, isAuthenticated, loading, error, success } = useSelector(
+    (state) => state.user
+  );
+
   const { theme, setTheme } = useTheme();
+  // if (loading) {
+  //   return (
+  //     <Loader />
+  //   )
+  // }
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-      </Route>
-      <Route />
-    </Routes>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full"></div>
+        </div>
+      }
+    >
+      <Routes>
+        <Route path="/" element={<AuthPageLayout />}>
+          <Route path="/signup" element={<Register />} />
+          {isAuthenticated ? (
+            <>
+              <Route
+                path="/dashboard/*"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </>
+          ) : (
+            <Route
+              path="/login"
+              element={
+                <Login
+                  user={user}
+                  loading={loading}
+                  error={error}
+                  isAuthenticated={isAuthenticated}
+                />
+              }
+            />
+          )}
+        </Route>
+
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home isAuthenticated={isAuthenticated} />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/password/reset/:token" element={<ResetPassword />} />
+          <Route path="/verify-otp" element={<Verification />} />
+        </Route>
+        <Route />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<div>Users Page</div>} />
+        <Route path="/admin/reports" element={<div>Reports Page</div>} />
+        <Route path="/admin/analytics" element={<div>Analytics Page</div>} />
+        <Route path="/admin/settings" element={<div>Settings Page</div>} />
+        <Route path="/admin/security" element={<div>Security Page</div>} />
+      </Routes>
+    </Suspense>
   );
 };
 

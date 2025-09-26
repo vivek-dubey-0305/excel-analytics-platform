@@ -38,7 +38,22 @@ const actionSchema = new Schema(
     action: {
       type: String,
       required: true,
-      enum: ["upload", "delete", "update", "login", "logout", "register"],
+      enum: [
+        "upload",
+        "delete",
+        "download",
+        "analytics",
+        "update",
+        "login",
+        "logout",
+        "register",
+        "reset-password",
+        "change-password",
+        "update-profile",
+        "avatar",
+        "delete-user",
+       
+      ],
     },
     description: { type: String, default: "" },
     ipAddress: { type: String },

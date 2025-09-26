@@ -1,153 +1,216 @@
 import React, { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { register, sendOtp } from "../../redux/slice/user/user.slice";
+import { User, Mail, Phone, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import BackgroundAnimation from "../../components/BackgroundAnimation/BackgroundAnimation";
+import ThemeToogleButton from "../../components/Buttons/ThemeToogleButton";
 
-const SignupPage = () => {
-  const { theme } = useTheme();
+const Register = () => {
+  const { user, loading, error, isAuthenticated, success } = useSelector(
+    (state) => state.user
+  );
+
+  const dispatch = useDispatch();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate?.() ?? (() => {});
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
+
+  const { fullName, email, phone, password } = formData;
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((s) => ({ ...s, [name]: value }));
+    setFormData((s) => ({ ...s, [name]: value }));
   };
 
   const validate = () => {
-    if (!form.name.trim()) { setErr("Please enter your name."); return false; }
-    if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) { setErr("Please enter a valid email."); return false; }
-    if (!form.password || form.password.length < 6) { setErr("Password should be at least 6 chars."); return false; }
-    if (form.password !== form.confirm) { setErr("Passwords do not match."); return false; }
-    setErr("");
+    if (!fullName.trim()) {
+      setErr("Please enter your name.");
+      return false;
+    }
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setErr("Please enter a valid email.");
+      return false;
+    }
+    if (!phone) {
+      setErr("Please enter your phone number.");
+      return false;
+    }
+    if (!password || password.length < 8) {
+      setErr("Password should be at least 8 characters.");
+      return false;
+    }
+    setErr(error);
     return true;
   };
 
-  const submit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    setLoading(true);
-    setErr("");
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Registration failed");
 
-      // optionally auto-login or navigate to login
-      navigate("/login");
-    } catch (error) {
-      setErr(error.message);
-    } finally {
-      setLoading(false);
+    const registerData = { fullName, email, phone, password };
+
+    try {
+      const result = await dispatch(register(registerData));
+      console.log("Dispath result", result?.meta?.requestStatus);
+      if (result?.meta?.requestStatus === "fulfilled") dispatch(sendOtp());
+      navigate("/verify-otp", { state: { email: registerData.email } });
+    } catch (err) {
+      console.log("error at register : ", err?.message);
+      console.log("error at register : ", error);
+      setErr(error || `${err?.message} ...err `);
     }
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-6 py-12 ${
-      theme === "light" ? "bg-white text-black" : "bg-black text-white"
-    }`}>
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="mt-2 text-3xl font-extrabold">
-            Create your account for <span className="text-green-500">ExcelAnalytics</span>
+    <div className="relative min-h-screen overflow-hidden">
+      <BackgroundAnimation theme={theme} />
+
+      {/* Login Form */}
+      <ThemeToogleButton theme={theme} setTheme={setTheme} />
+
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        {/* Your register form content */}
+
+        <div
+          className={`w-full max-w-md rounded-2xl shadow-lg p-8 
+          ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"}`}
+        >
+          <h2 className="text-2xl font-bold text-center mb-6">
+            Create an Account
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            Start turning spreadsheets into powerful visuals.
-          </p>
-        </div>
 
-        <form className="mt-8 space-y-6" onSubmit={submit} noValidate>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <input
-              name="name"
-              value={form.name}
-              onChange={onChange}
-              required
-              placeholder="Full name"
-              className={`appearance-none relative block w-full px-4 py-3 border ${
-                theme === "light" ? "border-gray-200 bg-white" : "border-gray-700 bg-gray-900"
-              } placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400`}
-            />
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={onChange}
-              required
-              placeholder="Email address"
-              className={`appearance-none relative block w-full mt-3 px-4 py-3 border ${
-                theme === "light" ? "border-gray-200 bg-white" : "border-gray-700 bg-gray-900"
-              } placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400`}
-            />
+          {err && (
+            <div className="mb-4 text-sm text-red-500 bg-red-100 p-2 rounded">
+              {err}
+            </div>
+          )}
 
-            <div className="relative mt-3">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Full Name */}
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
-                name="password"
-                type={showPassword ? "text" : "password"}
-                value={form.password}
+                type="text"
+                name="fullName"
+                value={fullName}
                 onChange={onChange}
-                required
-                placeholder="Password"
-                className={`appearance-none relative block w-full px-4 py-3 border ${
-                  theme === "light" ? "border-gray-200 bg-white" : "border-gray-700 bg-gray-900"
-                } placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400`}
+                placeholder="Full Name"
+                className={`w-full pl-10 pr-3 py-2 rounded-lg border 
+                focus:outline-none focus:ring-2 
+                ${
+                  theme === "dark"
+                    ? "bg-gray-800 border-gray-700 focus:ring-green-500"
+                    : "bg-white border-gray-300 focus:ring-green-600"
+                }`}
               />
             </div>
 
-            <div className="relative mt-3">
+            {/* Email */}
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
-                name="confirm"
-                type={showPassword ? "text" : "password"}
-                value={form.confirm}
+                type="email"
+                name="email"
+                value={email}
                 onChange={onChange}
-                required
-                placeholder="Confirm password"
-                className={`appearance-none relative block w-full px-4 py-3 border ${
-                  theme === "light" ? "border-gray-200 bg-white" : "border-gray-700 bg-gray-900"
-                } placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400`}
+                placeholder="Email"
+                className={`w-full pl-10 pr-3 py-2 rounded-lg border 
+                focus:outline-none focus:ring-2 
+                ${
+                  theme === "dark"
+                    ? "bg-gray-800 border-gray-700 focus:ring-green-500"
+                    : "bg-white border-gray-300 focus:ring-green-600"
+                }`}
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="relative">
+              <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                name="phone"
+                value={phone}
+                onChange={onChange}
+                placeholder="Phone Number"
+                className={`w-full pl-10 pr-3 py-2 rounded-lg border 
+                focus:outline-none focus:ring-2 
+                ${
+                  theme === "dark"
+                    ? "bg-gray-800 border-gray-700 focus:ring-green-500"
+                    : "bg-white border-gray-300 focus:ring-green-600"
+                }`}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={password}
+                onChange={onChange}
+                placeholder="Password"
+                className={`w-full pl-10 pr-10 py-2 rounded-lg border 
+                focus:outline-none focus:ring-2 
+                ${
+                  theme === "dark"
+                    ? "bg-gray-800 border-gray-700 focus:ring-green-500"
+                    : "bg-white border-gray-300 focus:ring-green-600"
+                }`}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-2.5 text-gray-400"
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-          </div>
 
-          {err && <div className="text-red-500 text-sm">{err}</div>}
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-2 rounded-lg flex items-center justify-center font-medium 
+              transition 
+              ${
+                theme === "dark"
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-green-500 text-white hover:bg-green-600"
+              }`}
+            >
+              {loading ? (
+                <Loader2 className="animate-spin h-5 w-5 mr-2" />
+              ) : null}
+              {loading ? "Signing up..." : "Sign Up"}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              theme === "light"
-                ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-400"
-                : "bg-green-500 text-black hover:bg-green-600 focus:ring-green-300"
-            }`}
-          >
-            {loading ? "Creating account..." : "Create account"}
-          </button>
-
-          <div className="text-center">
-            <p className="text-sm">
-              Already registered?{" "}
-              <a href="/login" className="font-medium text-green-600 hover:underline">
-                Sign in
-              </a>
-            </p>
-          </div>
-        </form>
+          <p className="mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <span
+              onClick={() => navigate("/login")}
+              className="cursor-pointer font-semibold hover:underline"
+            >
+              Login
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
-export default SignupPage;
+export default Register;

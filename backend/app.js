@@ -36,7 +36,7 @@ app.use(cors({
 
 
 app.use("/api/v1/users", userRouter)
-app.use("/api/v1/files", fileRouter)
+app.use("/api/v1/file", fileRouter)
 app.use("/api/v1/activity", activityRouter)
 app.use("/api/v1/admin", adminRouter)
 
