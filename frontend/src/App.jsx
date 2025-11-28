@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useTheme } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute/AdminProtectedRoute";
 
 // ⏳ Lazy loaded imports
 const Home = lazy(() => import("./pages/PublicPages/Home"));
@@ -15,7 +16,7 @@ const Verification = lazy(() => import("./pages/AuthPages/Verification"));
 const Dashboard = lazy(() => import("./pages/AuthPages/Dashboard"));
 const About = lazy(() => import("./pages/PublicPages/About"));
 const Contact = lazy(() => import("./pages/PublicPages/Contact"));
-const AuthPageLayout = lazy(() => import("./components/Layout/authPageLayout"));
+const AuthPageLayout = lazy(() => import("./components/Layout/AuthPageLayout"));
 
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import { useDispatch, useSelector } from "react-redux";
@@ -94,12 +95,12 @@ const App = () => {
 
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/users" element={<div>Users Page</div>} />
-        <Route path="/admin/reports" element={<div>Reports Page</div>} />
-        <Route path="/admin/analytics" element={<div>Analytics Page</div>} />
-        <Route path="/admin/settings" element={<div>Settings Page</div>} />
-        <Route path="/admin/security" element={<div>Security Page</div>} />
+        <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/users" element={<AdminProtectedRoute><div>Users Page</div></AdminProtectedRoute>} />
+        <Route path="/admin/reports" element={<AdminProtectedRoute><div>Reports Page</div></AdminProtectedRoute>} />
+        <Route path="/admin/analytics" element={<AdminProtectedRoute><div>Analytics Page</div></AdminProtectedRoute>} />
+        <Route path="/admin/settings" element={<AdminProtectedRoute><div>Settings Page</div></AdminProtectedRoute>} />
+        <Route path="/admin/security" element={<AdminProtectedRoute><div>Security Page</div></AdminProtectedRoute>} />
       </Routes>
     </Suspense>
   );

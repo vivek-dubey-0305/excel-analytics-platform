@@ -78,7 +78,7 @@
 // export default ProfileMenu;
 import { useState, useRef, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { ChevronDown, LogOut, User, Settings, HelpCircle } from "lucide-react";
+import { ChevronDown, LogOut, User, Settings, HelpCircle, Shield } from "lucide-react";
 import { logout } from "../../redux/slice/user/user.slice"; // adjust path
 import { useNavigate } from "react-router-dom";
 
@@ -135,6 +135,8 @@ const ProfileMenu = ({ user, theme }) => {
       console.log("Navigate to settings");
     } else if (action === "help") {
 navigate("/contact")
+    } else if (action === "admin") {
+      navigate("/admin");
     }
   };
 
@@ -290,31 +292,20 @@ navigate("/contact")
 
             {/* Menu Items */}
             <div className="py-2">
-              {/* <button
-                onClick={() => handleMenuItemClick("profile")}
-                className={`w-full flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 ${
-                  theme === "dark"
-                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-                role="menuitem"
-              >
-                <User size={18} />
-                <span>View Profile</span>
-              </button> */}
-
-              {/* <button
-                onClick={() => handleMenuItemClick("settings")}
-                className={`w-full flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 ${
-                  theme === "dark"
-                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-                role="menuitem"
-              >
-                <Settings size={18} />
-                <span>Settings</span>
-              </button> */}
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => handleMenuItemClick("admin")}
+                  className={`w-full flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 ${
+                    theme === "dark"
+                      ? "text-blue-300 hover:bg-blue-900/20 hover:text-blue-200"
+                      : "text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                  }`}
+                  role="menuitem"
+                >
+                  <Shield size={18} />
+                  <span>Admin Panel</span>
+                </button>
+              )}
 
               <button
                 onClick={() => handleMenuItemClick("help")}

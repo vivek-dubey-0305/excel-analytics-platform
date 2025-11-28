@@ -19,10 +19,10 @@ router.route("/my-activity-logs").get(getMyActivityLogs);
 // ✅ Admin logs
 router
     .route("/all-activity-logs")
-    .get(customRoles("admin"), getAllActivityLogs);
+    .get(verifyJWT, customRoles("admin"), getAllActivityLogs);
 
 router
     .route("/clear/:id")
-    .delete( clearUserLogs);
+    .delete(verifyJWT, customRoles("admin"), clearUserLogs);
 
 export default router;

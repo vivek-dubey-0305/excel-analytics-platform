@@ -9,6 +9,8 @@ import bcrypt from "bcryptjs"
 import crypto from "crypto"
 
 import { User } from "../models/user.model.js";
+import { File } from "../models/file.model.js";
+import { ActivityLog } from "../models/activityLog.model.js";
 import { destroyOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.utils.js";
 
 
@@ -29,20 +31,19 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
 
 // *Single user
 const getOneUser = asyncHandler(async (req, res, next) => {
-    const { userId } = req.params?.id
-    console.log(req.params)
-    const user = await User.findOne(userId)
+    const { id } = req.params;
+    const user = await User.findById(id).select("-password -refreshToken");
 
     if (!user) {
-        return next(new ErrorHandler("No user exist/found, please check the id for debud info", 404))
+        return next(new ErrorHandler("No user exist/found, please check the id for debug info", 404));
     }
 
     return res.status(200).json({
         success: true,
         user,
         message: "User Found successfully"
-    })
-})
+    });
+});
 
 
 
@@ -232,10 +233,90 @@ const adminDeleteUser = asyncHandler(async (req, res, next) => {
 });
 
 
+const getAllFiles = asyncHandler(async (req, res, next) => {
+    const allFiles = await File.find({}).populate("uploadedBy", "fullName email");
+
+    if (!allFiles) {
+        return next(new ErrorHandler("No files found", 404));
+    }
+
+    return res.status(200).json({
+        success: true,
+        allFiles,
+        message: "Files retrieved successfully"
+    });
+});
+
+const deleteFileByAdmin = asyncHandler(async (req, res, next) => {
+    const { fileId } = req.params;
+
+    const file = await File.findById(fileId);
+    if (!file) {
+        return next(new ErrorHandler("File not found", 404));
+    }
+
+    // Delete from Cloudinary
+    if (file.cloudinaryId) {
+        await destroyOnCloudinary(file.cloudinaryId);
+    }
+
+    // Delete from DB
+    await File.findByIdAndDelete(fileId);
+
+    return res.status(200).json({
+        success: true,
+        message: "File deleted successfully by admin"
+    });
+});
+
+const getAllActivityLogs = asyncHandler(async (req, res, next) => {
+    const { userId, action } = req.query;
+
+    let filter = {};
+    if (userId) filter.user = userId;
+
+    let logs = await ActivityLog.find(filter).populate("user", "fullName email role");
+
+    if (action) {
+        logs = logs.map(log => ({
+            ...log.toObject(),
+            activities: log.activities.filter(a => a.action === action)
+        }));
+    }
+
+    return res.status(200).json({
+        success: true,
+        logs,
+        message: "Activity logs retrieved successfully"
+    });
+});
+
+const clearUserLogs = asyncHandler(async (req, res, next) => {
+    const { userId } = req.params;
+
+    const log = await ActivityLog.findOne({ user: userId });
+    if (!log) {
+        return next(new ErrorHandler("No logs found for this user", 404));
+    }
+
+    log.activities = [];
+    await log.save();
+
+    return res.status(200).json({
+        success: true,
+        message: `Activity logs for user ${userId} cleared successfully`
+    });
+});
+
+
 export {
     getAllUsers,
     getOneUser,
     adminUpdateUserProfile,
     adminUpdateUserAvatar,
-    adminDeleteUser
+    adminDeleteUser,
+    getAllFiles,
+    deleteFileByAdmin,
+    getAllActivityLogs,
+    clearUserLogs
 }

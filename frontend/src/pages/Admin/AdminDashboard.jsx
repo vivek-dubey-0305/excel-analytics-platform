@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  Eye, 
-  Activity, 
-  Settings, 
-  Home, 
-  Bell, 
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  getAllUsers,
+  getOneUser,
+  adminUpdateUserProfile,
+  adminDeleteUser,
+  getAllFiles,
+  adminDeleteFile,
+  getAllActivityLogs,
+  adminClearUserLogs,
+  clearAdminState
+} from '../../redux/slice/admin/admin.slice';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  Users,
+  Search,
+  Plus,
+  Edit3,
+  Trash2,
+  Eye,
+  Activity,
+  Settings,
+  Home,
+  Bell,
   User,
   Mail,
   Phone,
@@ -21,85 +34,55 @@ import {
   MoreVertical,
   X,
   Save,
-  UserPlus
+  UserPlus,
+  FileText,
+  Download,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const AdminDashboard = () => {
+  const dispatch = useDispatch();
+  const { users, files, activityLogs, loading, error, successMessage } = useSelector(state => state.admin);
+  const { theme, setTheme } = useTheme();
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('view'); // 'view', 'create', 'edit'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
 
-  // Sample user data with activities
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234-567-8900',
-      role: 'admin',
-      status: 'active',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
-      joinDate: '2024-01-15',
-      lastActive: '2 hours ago',
-      location: 'New York, USA',
-      activities: [
-        { action: 'Logged in', timestamp: '2024-09-25 10:30 AM', ip: '192.168.1.1' },
-        { action: 'Updated profile', timestamp: '2024-09-24 03:45 PM', ip: '192.168.1.1' },
-        { action: 'Changed password', timestamp: '2024-09-23 09:15 AM', ip: '192.168.1.1' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+1 234-567-8901',
-      role: 'user',
-      status: 'active',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane',
-      joinDate: '2024-02-20',
-      lastActive: '1 day ago',
-      location: 'Los Angeles, USA',
-      activities: [
-        { action: 'Logged in', timestamp: '2024-09-24 08:20 AM', ip: '192.168.1.2' },
-        { action: 'Downloaded report', timestamp: '2024-09-24 08:25 AM', ip: '192.168.1.2' },
-        { action: 'Viewed dashboard', timestamp: '2024-09-24 08:30 AM', ip: '192.168.1.2' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      email: 'mike@example.com',
-      phone: '+1 234-567-8902',
-      role: 'moderator',
-      status: 'inactive',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
-      joinDate: '2024-03-10',
-      lastActive: '1 week ago',
-      location: 'Chicago, USA',
-      activities: [
-        { action: 'Logged out', timestamp: '2024-09-18 05:30 PM', ip: '192.168.1.3' },
-        { action: 'Moderated content', timestamp: '2024-09-18 02:15 PM', ip: '192.168.1.3' },
-        { action: 'Logged in', timestamp: '2024-09-18 09:00 AM', ip: '192.168.1.3' }
-      ]
+  useEffect(() => {
+    if (activeTab === 'users') {
+      dispatch(getAllUsers());
+    } else if (activeTab === 'files') {
+      dispatch(getAllFiles());
+    } else if (activeTab === 'activity') {
+      dispatch(getAllActivityLogs());
     }
-  ]);
+  }, [activeTab, dispatch]);
+
+  useEffect(() => {
+    if (successMessage) {
+      // Clear success message after 3 seconds
+      setTimeout(() => dispatch(clearAdminState()), 3000);
+    }
+  }, [successMessage, dispatch]);
 
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
     phone: '',
-    role: 'user',
-    status: 'active',
-    location: ''
+    gender: '',
+    social_links: {}
   });
 
   // Filter users based on search and role
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
@@ -109,21 +92,19 @@ const AdminDashboard = () => {
     setSelectedUser(user);
     if (user) {
       setFormData({
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        status: user.status,
-        location: user.location
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        gender: user.gender || '',
+        social_links: user.social_links || {}
       });
     } else {
       setFormData({
-        name: '',
+        fullName: '',
         email: '',
         phone: '',
-        role: 'user',
-        status: 'active',
-        location: ''
+        gender: '',
+        social_links: {}
       });
     }
     setShowModal(true);
@@ -133,12 +114,11 @@ const AdminDashboard = () => {
     setShowModal(false);
     setSelectedUser(null);
     setFormData({
-      name: '',
+      fullName: '',
       email: '',
       phone: '',
-      role: 'user',
-      status: 'active',
-      location: ''
+      gender: '',
+      social_links: {}
     });
   };
 
@@ -149,31 +129,28 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleCreateUser = () => {
-    const newUser = {
-      id: users.length + 1,
-      ...formData,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.name}`,
-      joinDate: new Date().toISOString().split('T')[0],
-      lastActive: 'Just now',
-      activities: []
-    };
-    setUsers([...users, newUser]);
-    closeModal();
-  };
-
   const handleUpdateUser = () => {
-    setUsers(users.map(user => 
-      user.id === selectedUser.id 
-        ? { ...user, ...formData }
-        : user
-    ));
+    if (selectedUser) {
+      dispatch(adminUpdateUserProfile({ userId: selectedUser._id, formData }));
+    }
     closeModal();
   };
 
   const handleDeleteUser = (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(user => user.id !== userId));
+      dispatch(adminDeleteUser(userId));
+    }
+  };
+
+  const handleDeleteFile = (fileId) => {
+    if (window.confirm('Are you sure you want to delete this file?')) {
+      dispatch(adminDeleteFile(fileId));
+    }
+  };
+
+  const handleClearUserLogs = (userId) => {
+    if (window.confirm('Are you sure you want to clear this user\'s activity logs?')) {
+      dispatch(adminClearUserLogs(userId));
     }
   };
 
@@ -190,18 +167,20 @@ const AdminDashboard = () => {
   };
 
   const Sidebar = () => (
-    <div className="w-64 bg-white border-r border-gray-200 min-h-screen">
+    <div className={`w-64 border-r min-h-screen ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+        <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Admin Panel</h1>
       </div>
       <nav className="mt-6">
         <div className="px-3 space-y-1">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-              activeTab === 'dashboard' 
-                ? 'bg-blue-100 text-blue-900' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              activeTab === 'dashboard'
+                ? 'bg-blue-100 text-blue-900'
+                : theme === 'dark'
+                  ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
             <Home className="mr-3 h-5 w-5" />
@@ -210,20 +189,37 @@ const AdminDashboard = () => {
           <button
             onClick={() => setActiveTab('users')}
             className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-              activeTab === 'users' 
-                ? 'bg-blue-100 text-blue-900' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              activeTab === 'users'
+                ? 'bg-blue-100 text-blue-900'
+                : theme === 'dark'
+                  ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
             <Users className="mr-3 h-5 w-5" />
             Users
           </button>
           <button
+            onClick={() => setActiveTab('files')}
+            className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+              activeTab === 'files'
+                ? 'bg-blue-100 text-blue-900'
+                : theme === 'dark'
+                  ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <FileText className="mr-3 h-5 w-5" />
+            Files
+          </button>
+          <button
             onClick={() => setActiveTab('activity')}
             className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-              activeTab === 'activity' 
-                ? 'bg-blue-100 text-blue-900' 
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              activeTab === 'activity'
+                ? 'bg-blue-100 text-blue-900'
+                : theme === 'dark'
+                  ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
             <Activity className="mr-3 h-5 w-5" />
@@ -260,12 +256,10 @@ const AdminDashboard = () => {
         </div>
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="flex items-center">
-            <Activity className="h-8 w-8 text-green-600" />
+            <FileText className="h-8 w-8 text-green-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Users</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter(user => user.status === 'active').length}
-              </p>
+              <p className="text-sm font-medium text-gray-600">Total Files</p>
+              <p className="text-2xl font-bold text-gray-900">{files.length}</p>
             </div>
           </div>
         </div>
@@ -286,19 +280,19 @@ const AdminDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow border">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            {users.slice(0, 3).map(user => (
-              user.activities.slice(0, 2).map((activity, index) => (
-                <div key={`${user.id}-${index}`} className="flex items-center space-x-3">
-                  <img src={user.avatar} alt="" className="h-8 w-8 rounded-full" />
+            {activityLogs.slice(0, 5).map(log => (
+              log.activities.slice(-2).map((activity, index) => (
+                <div key={`${log._id}-${index}`} className="flex items-center space-x-3">
+                  <img src={log.user?.avatar?.secure_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="h-8 w-8 rounded-full" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900">
-                      <span className="font-medium">{user.name}</span> {activity.action}
+                      <span className="font-medium">{log.user?.fullName}</span> {activity.action}
                     </p>
-                    <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                    <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
                   </div>
                 </div>
               ))
-            ))}
+            )).flat()}
           </div>
         </div>
         
@@ -336,13 +330,6 @@ const AdminDashboard = () => {
     <div className="p-6">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-        <button
-          onClick={() => openModal('create')}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add User
-        </button>
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -381,12 +368,12 @@ const AdminDashboard = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <img src={user.avatar} alt="" className="h-10 w-10 rounded-full" />
+                    <img src={user.avatar?.secure_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="h-10 w-10 rounded-full" />
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                      <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
                       <div className="text-sm text-gray-500">{user.email}</div>
                     </div>
                   </div>
@@ -397,12 +384,12 @@ const AdminDashboard = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user.status)}`}>
-                    {user.status}
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800`}>
+                    Active
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.lastActive}
+                  {new Date(user.updatedAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
@@ -419,7 +406,72 @@ const AdminDashboard = () => {
                       <Edit3 className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => handleDeleteUser(user.id)}
+                      onClick={() => handleDeleteUser(user._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const FilesTable = () => (
+    <div className="p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">File Management</h2>
+      </div>
+
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded By</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded At</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {files.map((file) => (
+              <tr key={file._id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <FileText className="h-8 w-8 text-gray-400 mr-3" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{file.originalName}</div>
+                      <div className="text-sm text-gray-500">{file.format}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{file.uploadedBy?.fullName}</div>
+                  <div className="text-sm text-gray-500">{file.uploadedBy?.email}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {(file.size / 1024).toFixed(2)} KB
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(file.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div className="flex space-x-2">
+                    <a
+                      href={file.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      <Download className="h-4 w-4" />
+                    </a>
+                    <button
+                      onClick={() => handleDeleteFile(file._id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -440,19 +492,26 @@ const AdminDashboard = () => {
       <div className="bg-white shadow rounded-lg">
         <div className="p-6">
           <div className="space-y-6">
-            {users.map(user => (
-              <div key={user.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                <div className="flex items-center mb-3">
-                  <img src={user.avatar} alt="" className="h-8 w-8 rounded-full" />
-                  <h3 className="ml-3 text-lg font-medium text-gray-900">{user.name}</h3>
+            {activityLogs.map(log => (
+              <div key={log._id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <img src={log.user?.avatar?.secure_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="h-8 w-8 rounded-full" />
+                    <h3 className="ml-3 text-lg font-medium text-gray-900">{log.user?.fullName}</h3>
+                  </div>
+                  <button
+                    onClick={() => handleClearUserLogs(log.user?._id)}
+                    className="text-red-600 hover:text-red-900 text-sm"
+                  >
+                    Clear Logs
+                  </button>
                 </div>
                 <div className="space-y-2">
-                  {user.activities.map((activity, index) => (
+                  {log.activities.slice(-10).reverse().map((activity, index) => (
                     <div key={index} className="flex items-center text-sm">
                       <Clock className="h-4 w-4 text-gray-400 mr-2" />
                       <span className="text-gray-900">{activity.action}</span>
-                      <span className="ml-2 text-gray-500">at {activity.timestamp}</span>
-                      <span className="ml-2 text-gray-400">from {activity.ip}</span>
+                      <span className="ml-2 text-gray-500">at {new Date(activity.timestamp).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -472,8 +531,7 @@ const AdminDashboard = () => {
         <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900">
-              {modalType === 'view' ? 'User Details' : 
-               modalType === 'create' ? 'Create User' : 'Edit User'}
+              {modalType === 'view' ? 'User Details' : 'Edit User'}
             </h3>
             <button
               onClick={closeModal}
@@ -486,8 +544,8 @@ const AdminDashboard = () => {
           {modalType === 'view' && selectedUser ? (
             <div className="space-y-4">
               <div className="text-center">
-                <img src={selectedUser.avatar} alt="" className="h-20 w-20 rounded-full mx-auto mb-4" />
-                <h4 className="text-xl font-semibold">{selectedUser.name}</h4>
+                <img src={selectedUser.avatar?.secure_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="h-20 w-20 rounded-full mx-auto mb-4" />
+                <h4 className="text-xl font-semibold">{selectedUser.fullName}</h4>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center">
@@ -499,37 +557,27 @@ const AdminDashboard = () => {
                   <span>{selectedUser.phone}</span>
                 </div>
                 <div className="flex items-center">
-                  <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{selectedUser.location}</span>
+                  <User className="h-4 w-4 text-gray-400 mr-2" />
+                  <span>{selectedUser.gender}</span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>Joined {selectedUser.joinDate}</span>
-                </div>
-              </div>
-              <div className="pt-4">
-                <h5 className="font-medium mb-2">Recent Activities</h5>
-                <div className="space-y-1 text-sm">
-                  {selectedUser.activities.slice(0, 3).map((activity, index) => (
-                    <div key={index} className="text-gray-600">
-                      {activity.action} - {activity.timestamp}
-                    </div>
-                  ))}
+                  <span>Joined {new Date(selectedUser.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
           ) : (
             <form onSubmit={(e) => {
               e.preventDefault();
-              modalType === 'create' ? handleCreateUser() : handleUpdateUser();
+              handleUpdateUser();
             }}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="fullName"
+                    value={formData.fullName}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     required
@@ -557,38 +605,17 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                   <select
-                    name="role"
-                    value={formData.role}
+                    name="gender"
+                    value={formData.gender}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="user">User</option>
-                    <option value="moderator">Moderator</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
               </div>
@@ -616,19 +643,30 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className={`flex min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Sidebar />
       <div className="flex-1">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className={`border-b px-6 py-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className={`text-xl font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
               {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
             </h1>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className={`p-2 rounded-lg transition-colors ${
+                  theme === 'dark'
+                    ? 'hover:bg-gray-700 text-gray-300'
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
               <Bell className="h-5 w-5 text-gray-400" />
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-700">Admin User</span>
+                <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Admin User</span>
               </div>
             </div>
           </div>
@@ -637,6 +675,7 @@ const AdminDashboard = () => {
         <main className="flex-1">
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'users' && <UsersTable />}
+          {activeTab === 'files' && <FilesTable />}
           {activeTab === 'activity' && <ActivityLog />}
           {activeTab === 'settings' && (
             <div className="p-6">

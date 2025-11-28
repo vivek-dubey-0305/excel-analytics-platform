@@ -83,12 +83,69 @@ export const adminDeleteUser = createAsyncThunk(
   }
 );
 
+// Get All Files
+export const getAllFiles = createAsyncThunk(
+  "admin/getAllFiles",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${api_admin}/get/files/all`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// Delete File by Admin
+export const adminDeleteFile = createAsyncThunk(
+  "admin/adminDeleteFile",
+  async (fileId, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.delete(`${api_admin}/delete/file/${fileId}`);
+      return { fileId, message: data.message };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// Get All Activity Logs
+export const getAllActivityLogs = createAsyncThunk(
+  "admin/getAllActivityLogs",
+  async ({ userId, action } = {}, { rejectWithValue }) => {
+    try {
+      const params = {};
+      if (userId) params.userId = userId;
+      if (action) params.action = action;
+      const { data } = await axios.get(`${api_admin}/get/activity-logs/all`, { params });
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// Clear User Logs
+export const adminClearUserLogs = createAsyncThunk(
+  "admin/adminClearUserLogs",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.delete(`${api_admin}/clear/logs/${userId}`);
+      return { userId, message: data.message };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 // ================= SLICE =================
 const adminSlice = createSlice({
   name: "admin",
   initialState: {
     users: [],
     selectedUser: null,
+    files: [],
+    activityLogs: [],
     loading: false,
     error: null,
     successMessage: null,
@@ -171,6 +228,60 @@ const adminSlice = createSlice({
         state.users = state.users.filter((u) => u._id !== action.payload.userId);
       })
       .addCase(adminDeleteUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Get All Files
+      .addCase(getAllFiles.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getAllFiles.fulfilled, (state, action) => {
+        state.loading = false;
+        state.files = action.payload.allFiles;
+      })
+      .addCase(getAllFiles.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Delete File by Admin
+      .addCase(adminDeleteFile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(adminDeleteFile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.successMessage = action.payload.message;
+        state.files = state.files.filter((f) => f._id !== action.payload.fileId);
+      })
+      .addCase(adminDeleteFile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Get All Activity Logs
+      .addCase(getAllActivityLogs.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getAllActivityLogs.fulfilled, (state, action) => {
+        state.loading = false;
+        state.activityLogs = action.payload.logs;
+      })
+      .addCase(getAllActivityLogs.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Clear User Logs
+      .addCase(adminClearUserLogs.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(adminClearUserLogs.fulfilled, (state, action) => {
+        state.loading = false;
+        state.successMessage = action.payload.message;
+        // Optionally update activityLogs if needed
+      })
+      .addCase(adminClearUserLogs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
