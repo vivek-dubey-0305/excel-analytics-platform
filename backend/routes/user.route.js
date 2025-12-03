@@ -5,10 +5,6 @@ import {
     registerUser,
     loginUser,
     logoutUser,
-    sendOtpToUser,
-    verifyOtpForUser,
-    sendResetPasswordLinkToUser,
-    resetPassword,
     changeCurrentPassword,
     getLoggedInUserInfo,
     updateUserProfile,
@@ -25,14 +21,6 @@ const router = express.Router()
 // *Register and login routes
 router.route("/register").post(registerUser)
 router.route("/login").post(loginUser)
-
-// *OTP routes
-router.route("/send-otp").get(verifyJWT, sendOtpToUser)
-router.route("/verify-otp").post(verifyOtpForUser)
-
-// *Forgot password flow
-router.route("/password/forgot-password").post(sendResetPasswordLinkToUser)
-router.route("/password/forgot-password/:token").post(resetPassword)
 
 // *Authenticated user routes
 router.route("/password/update-password").put(verifyJWT, changeCurrentPassword)

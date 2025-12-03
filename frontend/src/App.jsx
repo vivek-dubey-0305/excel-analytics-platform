@@ -88,12 +88,8 @@ const App = () => {
           <Route index element={<Home isAuthenticated={isAuthenticated} />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/password/reset/:token" element={<ResetPassword />} />
-          <Route path="/verify-otp" element={<Verification />} />
         </Route>
         <Route />
-
-        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/users" element={<AdminProtectedRoute><div>Users Page</div></AdminProtectedRoute>} />

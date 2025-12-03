@@ -51,16 +51,6 @@ export const logout = createAsyncThunk("user/logout", async (_, { rejectWithValu
     }
 });
 
-// Send OTP (GET)
-export const sendOtp = createAsyncThunk("user/sendOtp", async (_, { rejectWithValue }) => {
-    try {
-        const response = await axios.get(`${api_user}/send-otp`);
-        return response.data;
-    } catch (error) {
-        return rejectWithValue(error.response?.data || { message: "OTP request failed" });
-    }
-});
-
 // Verify OTP
 export const verifyOtp = createAsyncThunk("user/verifyOtp", async (otpData, { rejectWithValue }) => {
     try {
@@ -72,33 +62,6 @@ export const verifyOtp = createAsyncThunk("user/verifyOtp", async (otpData, { re
         return rejectWithValue(error.response?.data || { message: "OTP verification failed" });
     }
 });
-
-// Send reset password link
-export const sendResetLink = createAsyncThunk("user/sendResetLink", async (emailData, { rejectWithValue }) => {
-    try {
-        const response = await axios.post(`${api_user}/password/forgot-password`, emailData, {
-            headers: { "Content-Type": "application/json" },
-        });
-        return response.data;
-    } catch (error) {
-        return rejectWithValue(error.response?.data || { message: "Failed to send reset link" });
-    }
-});
-
-// Reset password using token (token in URL params)
-export const resetPassword = createAsyncThunk(
-    "user/resetPassword",
-    async ({ token, passwordData }, { rejectWithValue }) => {
-        try {
-            const response = await axios.post(`${api_user}/password/forgot-password/${token}`, passwordData, {
-                headers: { "Content-Type": "application/json" },
-            });
-            return response.data;
-        } catch (error) {
-            return rejectWithValue(error.response?.data || { message: "Password reset failed" });
-        }
-    }
-);
 
 // Change current password (user authenticated)
 export const changePassword = createAsyncThunk(
@@ -232,30 +195,6 @@ const userSlice = createSlice({
             state.isAuthenticated = false;
         });
         addRejected(logout);
-
-        // sendOtp
-        addPending(sendOtp);
-        addFulfilled(sendOtp, (state, action) => { state.success = action.payload?.success || true; });
-        addRejected(sendOtp);
-
-        // verifyOtp
-        addPending(verifyOtp);
-        addFulfilled(verifyOtp, (state, action) => {
-            state.success = action.payload?.success || null;
-            state.user = action.payload?.user || null;
-            state.isAuthenticated = Boolean(action.payload?.user);
-        });
-        addRejected(verifyOtp);
-
-        // sendResetLink
-        addPending(sendResetLink);
-        addFulfilled(sendResetLink, (state, action) => { state.success = action.payload?.success || true; });
-        addRejected(sendResetLink);
-
-        // resetPassword
-        addPending(resetPassword);
-        addFulfilled(resetPassword, (state, action) => { state.success = action.payload?.success || true; });
-        addRejected(resetPassword);
 
         // changePassword
         addPending(changePassword);

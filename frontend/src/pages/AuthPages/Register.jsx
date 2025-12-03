@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { register, sendOtp } from "../../redux/slice/user/user.slice";
+import { register } from "../../redux/slice/user/user.slice";
 import { User, Mail, Phone, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import BackgroundAnimation from "../../components/BackgroundAnimation/BackgroundAnimation";
 import ThemeToogleButton from "../../components/Buttons/ThemeToogleButton";
@@ -62,8 +62,7 @@ const Register = () => {
     try {
       const result = await dispatch(register(registerData));
       console.log("Dispath result", result?.meta?.requestStatus);
-      if (result?.meta?.requestStatus === "fulfilled") dispatch(sendOtp());
-      navigate("/verify-otp", { state: { email: registerData.email } });
+      if (result?.meta?.requestStatus === "fulfilled") navigate("/dashboard");
     } catch (err) {
       console.log("error at register : ", err?.message);
       console.log("error at register : ", error);

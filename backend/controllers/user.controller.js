@@ -7,70 +7,10 @@ import crypto from "crypto"
 import { User } from "../models/user.model.js";
 import { destroyOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.utils.js";
 import mongoose from "mongoose";
-import { sendEmail } from "../utils/mail.utils.js";
 import { cookieToken } from "../utils/cookie.utils.js";
 import { cloudinaryAvatarRefer } from "../utils/constants.utils.js";
 import { logActivity } from "../utils/logActivity.js";
 
-// *================================================================================
-function generateEmailLinkTemplate(Token) {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f7f7;">
-<div>
-<h3>
-<a href="http://localhost:5173/password/reset/${Token}">Click here to reset password</a>
-</h3>
-</div>
-</body>
-</html>`;
-}
-
-function generateEmailTemplate(verificationCode, companyName = "Zidio", logoUrl = "") {
-    return `<!DOCTYPE html>
-  <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Email Verification</title>
-  </head>
-  <body style="margin: 0; padding: 0; font-family: 'Arial', sans-serif; background-color: #ffffff; color: #333;">
-      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
-          <tr>
-              <td align="center" style="padding: 20px 0;">   
-                  <table align="center" cellpadding="0" cellspacing="0" width="600" style="border: 1px solid #e5e5e5; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
-                      <tr>
-                          <td style="padding: 25px; text-align: center; background-color: #f8f8f8; border-bottom: 1px solid #eeeeee;">
-                              ${logoUrl ? `<img src="${logoUrl}" alt="${companyName}" width="120" style="margin-bottom: 10px;" />` : `<h2>${companyName}</h2>`}
-                          </td>
-                      </tr>
-                      <tr>
-                          <td style="padding: 30px; text-align: center;">
-                              <h1 style="font-size: 22px; color: #333;">Verify Your Email</h1>
-                              <p style="font-size: 16px; color: #666;">Use the code below to verify your email address:</p>
-                              <div style="font-size: 28px; font-weight: bold; padding: 12px 24px; border: 2px solid #333; display: inline-block; margin: 15px 0;">
-                                  ${verificationCode}
-                              </div>
-                              <p style="font-size: 14px; color: #777;">If you didn’t request this, ignore this email.</p>
-                          </td>
-                      </tr>
-                      <tr>
-                          <td style="padding: 20px; text-align: center; background-color: #f8f8f8; border-top: 1px solid #eeeeee;">
-                              <p style="font-size: 12px; color: #999;">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
-                          </td>
-                      </tr>
-                  </table>
-              </td>
-          </tr>
-      </table>
-  </body>
-  </html>`;
-}
 // *================================================================================
 
 
@@ -150,7 +90,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
     try {
         const user = await User.create({
-            fullName, email, phone, password
+            fullName, email, phone, password, isVerified: true
         })
 
 
@@ -262,47 +202,6 @@ const logoutUser = asyncHandler(async (req, res, next) => {
     }
 })
 
-// *OTP ROUTE ---chceck if GET
-const sendOtpToUser = asyncHandler(async (req, res, next) => {
-    const userId = req.user._id;
-    console.log("USERID", userId)
-    if (!userId) {
-        // console.error(" Email not provided")
-        return next(new ErrorHandler("You are unauthorised to get otp, please register / login to continue", 400))
-    }
-    const user = await User.findById(userId)
-    if (!user?.email) {
-        // console.error("Wrong Email")
-        return next(new ErrorHandler("Please provide email used for account creation!"))
-    }
-
-    const OTP = await user.generateVerificationCode()
-    console.log("OTP: ", OTP)
-    await user.save()
-
-    try {
-        console.log(user.email)
-        let email = user?.email
-
-        const message = generateEmailTemplate(OTP);
-        const mailResponse = await sendEmail({
-            email,
-            subject: "YOUR VERIFICATION CODE",
-            message
-        })
-        console.log("MailResponse", mailResponse)
-        return res.status(200).json({
-            success: true,
-            message: `Code sent successfully to ${email}`
-        })
-
-    } catch (error) {
-        console.log("Email Error:\n", error.message || error)
-        return next(new ErrorHandler(`Unable to send email to ${user.email}\n Error ${error.message || error}`, 400))
-        // throw new ErrorHandler("Failed to send verification Code", 500)
-    }
-})
-
 // *Verify Route
 // ! -- check for the cookies down
 const verifyOtpForUser = asyncHandler(async (req, res, next) => {
@@ -369,46 +268,6 @@ const verifyOtpForUser = asyncHandler(async (req, res, next) => {
             message: `${email} verified successfully\nUser Created`,
             user: resUser, accessToken, refreshToken
         })
-})
-
-
-// *Reset Password Link
-const sendResetPasswordLinkToUser = asyncHandler(async (req, res, next) => {
-    const { email } = req.body;
-    console.log("HERE")
-    if (!email) {
-        // console.error(" Email not provided")
-        return next(new ErrorHandler("Please provide the email to sned otp", 400))
-    }
-    const user = await User.findOne({ email })
-    if (!user) {
-        // console.error("Wrong Email")
-        return next(new ErrorHandler("Please provide email used for account creation!"))
-    }
-
-    const Token = await user.generateResetPasswordLink()
-    // console.log("OTP: ", OTP)
-    await user.save()
-
-    try {
-
-        const message = generateEmailLinkTemplate(Token);
-        const mailRes = await sendEmail({
-            email,
-            subject: "YOUR RESET PASSWORD LINK",
-            message
-        })
-        console.log("MailRes", mailRes)
-        return res.status(200).json({
-            success: true,
-            message: `Email sent successfully to ${email}`
-        })
-
-    } catch (error) {
-        console.log("Email Error:\n", error)
-        return next(new ErrorHandler(`Unable to send email to ${email}\n Error ${error.message || error}`, 400))
-        // throw new ErrorHandler("Failed to send verification Code", 500)
-    }
 })
 
 
@@ -752,10 +611,6 @@ export {
     registerUser,
     loginUser,
     logoutUser,
-    sendOtpToUser,
-    verifyOtpForUser,
-    sendResetPasswordLinkToUser,
-    resetPassword,
     getLoggedInUserInfo,
     changeCurrentPassword,
     updateUserProfile,
