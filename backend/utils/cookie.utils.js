@@ -9,7 +9,7 @@ const cookieToken = async (user, res) => {
         httpOnly: true,
         secure: true,
         maxAge: 3 * 24 * 60 * 60 * 1000,  // 7 days in milliseconds
-        sameSite: "Strict"
+        sameSite: "None"
     }
 
     return res.status(201)
