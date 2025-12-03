@@ -174,16 +174,4 @@ userSchema.methods.generateVerificationCode = function () {
 }
 
 
-// *Reset password link
-userSchema.methods.generateResetPasswordLink = function () {
-    const forgotToken = crypto.randomBytes(20).toString("hex");
-
-    this.forgotPasswordToken = crypto.createHash("sha256").update(forgotToken).digest("hex")
-
-    this.forgotPasswordTokenExpiry = Date.now() + 7 * 60 * 1000
-
-    return forgotToken
-}
-
-
 export const User = mongoose.model("User", userSchema);

@@ -51,18 +51,6 @@ export const logout = createAsyncThunk("user/logout", async (_, { rejectWithValu
     }
 });
 
-// Verify OTP
-export const verifyOtp = createAsyncThunk("user/verifyOtp", async (otpData, { rejectWithValue }) => {
-    try {
-        const response = await axios.post(`${api_user}/verify-otp`, otpData, {
-            headers: { "Content-Type": "application/json" },
-        });
-        return response.data;
-    } catch (error) {
-        return rejectWithValue(error.response?.data || { message: "OTP verification failed" });
-    }
-});
-
 // Change current password (user authenticated)
 export const changePassword = createAsyncThunk(
     "user/changePassword",
