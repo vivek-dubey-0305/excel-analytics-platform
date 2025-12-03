@@ -10,9 +10,9 @@ const Home = lazy(() => import("./pages/PublicPages/Home"));
 const Layout = lazy(() => import("./components/Layout/Layout"));
 const Register = lazy(() => import("./pages/AuthPages/Register"));
 const Login = lazy(() => import("./pages/AuthPages/Login"));
-// const ForgotPassword = lazy(() => import("./pages/AuthPages/ForgotPassword"));
-// const ResetPassword = lazy(() => import("./pages/AuthPages/ResetPassword"));
-// const Verification = lazy(() => import("./pages/AuthPages/Verification"));
+const ForgotPassword = lazy(() => import("./pages/AuthPages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/AuthPages/ResetPassword"));
+const Verification = lazy(() => import("./pages/AuthPages/Verification"));
 const Dashboard = lazy(() => import("./pages/AuthPages/Dashboard"));
 const About = lazy(() => import("./pages/PublicPages/About"));
 const Contact = lazy(() => import("./pages/PublicPages/Contact"));
@@ -36,11 +36,10 @@ const App = () => {
 
     fetchUser();
   }, [dispatch]);
-  const { user, loading, error, success } = useSelector(
+  const { user, isAuthenticated, loading, error, success } = useSelector(
     (state) => state.user
   );
 
-  const isAuthenticated = true
 
   const { theme, setTheme } = useTheme();
   // if (loading) {
