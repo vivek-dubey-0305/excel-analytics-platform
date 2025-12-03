@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Eye, EyeOff, AlertCircle, CheckCircle, X } from "lucide-react";
 import {
   changePassword,
-  sendResetLink,
 } from "../../redux/slice/user/user.slice.js";
 import Loader from "../../components/Loader/Loader";
 import CustomAlert from "../../components/CustomAlert/CustomAlert";
@@ -50,7 +49,6 @@ const DashboardSecurityPage = ({ theme }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [alert, setAlert] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
@@ -187,17 +185,6 @@ const DashboardSecurityPage = ({ theme }) => {
                 {validationErrors.currentPassword}
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => setShowForgotPassword(true)}
-              className={`mt-2 text-sm transition-colors ${
-                theme === "dark"
-                  ? "text-green-400 hover:text-green-300"
-                  : "text-green-600 hover:text-green-700"
-              }`}
-            >
-              Forgot your current password?
-            </button>
           </div>
 
           {/* New Password */}
@@ -291,13 +278,6 @@ const DashboardSecurityPage = ({ theme }) => {
           </button>
         </form>
 
-        {/* Forgot Password Modal */}
-        {showForgotPassword && (
-          <ForgotPasswordModal
-            theme={theme}
-            onClose={() => setShowForgotPassword(false)}
-            onAlert={showAlert}
-          />
         )}
       </div>
 
@@ -320,9 +300,9 @@ const DashboardSecurityPage = ({ theme }) => {
   );
 };
 
-// Forgot Password Modal Component
-const ForgotPasswordModal = ({ theme, onClose, onAlert }) => {
+export default DashboardSecurityPage;
   const dispatch = useDispatch();
+/* removed
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -436,6 +416,7 @@ const ForgotPasswordModal = ({ theme, onClose, onAlert }) => {
       </div>
     </div>
   );
-};
+*/ };
+
 
 export default DashboardSecurityPage;
