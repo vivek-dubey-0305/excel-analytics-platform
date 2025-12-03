@@ -6,8 +6,7 @@ import { User } from "../models/user.model.js";
 
 export const verifyJWT = asyncHandler(async (req, res, next) => {
     console.log("\n-------------\nVERFYJWT.js\n-------------\n")
-    try {
-        if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
             // console.log('we are running on the client')
         } else {
             // console.log('we are running on the server');
@@ -48,17 +47,44 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
 
             next();
         } catch (error) {
-            return next(new ErrorHandler("Invalid AccessToken!!, token expired", 401))
+            if (error.name === 'TokenExpiredError') {
+                // Try to refresh token
+                const refreshToken = req.cookies?.refreshToken;
+                if (!refreshToken) {
+                    return next(new ErrorHandler("Access Token Expired and no refresh token", 401));
+                }
+                try {
+                    const decodedRefresh = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+                    const user = await User.findById(decodedRefresh?._id);
+                    if (!user || user.refreshToken !== refreshToken) {
+                        return next(new ErrorHandler("Invalid Refresh Token", 401));
+                    }
+                    // Generate new tokens
+                    const newAccessToken = await user.generateAccessToken();
+                    const newRefreshToken = await user.generateRefreshToken();
+                    user.refreshToken = newRefreshToken;
+                    await user.save();
+
+                    const options = {
+                        httpOnly: true,
+                        secure: true,
+                        maxAge: 3 * 24 * 60 * 60 * 1000,
+                        sameSite: "None"
+                    };
+
+                    res.cookie("accessToken", newAccessToken, options);
+                    res.cookie("refreshToken", newRefreshToken, options);
+
+                    // Set req.user with the user
+                    req.user = await User.findById(decodedRefresh?._id).select("-password -refreshToken");
+                    next();
+                } catch (refreshError) {
+                    return next(new ErrorHandler("Refresh Token Expired", 401));
+                }
+            } else {
+                return next(new ErrorHandler("Invalid AccessToken!!", 401));
+            }
         }
-
-    } catch (error) {
-        console.log("Access Token Expired! Attempting Refresh...");
-        return next(new ErrorHandler("ccess Token Expired!", 401))
-
-        // return refreshAccessToken(req, res, next);
-        // return next(new ErrorHandler("Invalid Token!", 401))
-
-    }
 })
 
 
